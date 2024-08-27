@@ -10,7 +10,9 @@ class TokenType:
     INTEGER = "INTEGER"
     PLUS = "PLUS"
     MINUS = "MINUS"
-    EOF = "EOF"  # Означає кінець вхідного рядка
+    MUL = "MUL"
+    DIV = "DIV"
+    EOF = "EOF"  
 
 
 class Token:
@@ -32,7 +34,7 @@ class Lexer:
         """Переміщуємо 'вказівник' на наступний символ вхідного рядка"""
         self.pos += 1
         if self.pos > len(self.text) - 1:
-            self.current_char = None  # Означає кінець введення
+            self.current_char = None  
         else:
             self.current_char = self.text[self.pos]
 
@@ -66,6 +68,14 @@ class Lexer:
             if self.current_char == "-":
                 self.advance()
                 return Token(TokenType.MINUS, "-")
+
+            if self.current_char == "*":
+                self.advance()
+                return Token(TokenType.MUL, "*")
+
+            if self.current_char == "/":
+                self.advance()
+                return Token(TokenType.DIV, "/")
 
             raise LexicalError("Помилка лексичного аналізу")
 
@@ -107,14 +117,29 @@ class Parser:
         else:
             self.error()
 
-    def term(self):
-        """Парсер для 'term' правил граматики. У нашому випадку - це цілі числа."""
+    def factor(self):
+        """Парсер для 'factor' правил граматики. У нашому випадку - це цілі числа."""
         token = self.current_token
         self.eat(TokenType.INTEGER)
         return Num(token)
 
+    def term(self):
+        """Парсер для 'term' правил граматики. Включає множення та ділення."""
+        node = self.factor()
+
+        while self.current_token.type in (TokenType.MUL, TokenType.DIV):
+            token = self.current_token
+            if token.type == TokenType.MUL:
+                self.eat(TokenType.MUL)
+            elif token.type == TokenType.DIV:
+                self.eat(TokenType.DIV)
+
+            node = BinOp(left=node, op=token, right=self.factor())
+
+        return node
+
     def expr(self):
-        """Парсер для арифметичних виразів."""
+        """Парсер для арифметичних виразів. Включає додавання та віднімання."""
         node = self.term()
 
         while self.current_token.type in (TokenType.PLUS, TokenType.MINUS):
@@ -129,21 +154,6 @@ class Parser:
         return node
 
 
-def print_ast(node, level=0):
-    indent = "  " * level
-    if isinstance(node, Num):
-        print(f"{indent}Num({node.value})")
-    elif isinstance(node, BinOp):
-        print(f"{indent}BinOp:")
-        print(f"{indent}  left: ")
-        print_ast(node.left, level + 2)
-        print(f"{indent}  op: {node.op.type}")
-        print(f"{indent}  right: ")
-        print_ast(node.right, level + 2)
-    else:
-        print(f"{indent}Unknown node type: {type(node)}")
-
-
 class Interpreter:
     def __init__(self, parser):
         self.parser = parser
@@ -153,6 +163,10 @@ class Interpreter:
             return self.visit(node.left) + self.visit(node.right)
         elif node.op.type == TokenType.MINUS:
             return self.visit(node.left) - self.visit(node.right)
+        elif node.op.type == TokenType.MUL:
+            return self.visit(node.left) * self.visit(node.right)
+        elif node.op.type == TokenType.DIV:
+            return self.visit(node.left) / self.visit(node.right)
 
     def visit_Num(self, node):
         return node.value

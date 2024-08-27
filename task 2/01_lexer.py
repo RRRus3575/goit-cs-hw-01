@@ -10,11 +10,11 @@ class TokenType:
     INTEGER = "INTEGER"
     PLUS = "PLUS"
     MINUS = "MINUS"
-    MUL = 'MUL'
-    DIVISION ='DIVISION'
-    LPAREN = 'LPAREN'
-    RPAREN = 'RPAREN'
-    EOF = "EOF"  # Означає кінець вхідного рядка
+    MUL = "MUL"
+    DIV = "DIV"
+    LPAREN = "LPAREN"
+    RPAREN = "RPAREN"
+    EOF = "EOF"  
 
 
 class Token:
@@ -33,20 +33,17 @@ class Lexer:
         self.current_char = self.text[self.pos]
 
     def advance(self):
-        """Переміщуємо 'вказівник' на наступний символ вхідного рядка"""
         self.pos += 1
         if self.pos > len(self.text) - 1:
-            self.current_char = None  # Означає кінець введення
+            self.current_char = None  
         else:
             self.current_char = self.text[self.pos]
 
     def skip_whitespace(self):
-        """Пропускаємо пробільні символи."""
         while self.current_char is not None and self.current_char.isspace():
             self.advance()
 
     def integer(self):
-        """Повертаємо ціле число, зібране з послідовності цифр."""
         result = ""
         while self.current_char is not None and self.current_char.isdigit():
             result += self.current_char
@@ -54,7 +51,6 @@ class Lexer:
         return int(result)
 
     def get_next_token(self):
-        """Лексичний аналізатор, що розбиває вхідний рядок на токени."""
         while self.current_char is not None:
             if self.current_char.isspace():
                 self.skip_whitespace()
@@ -75,15 +71,15 @@ class Lexer:
                 self.advance()
                 return Token(TokenType.MUL, "*")
 
-              if self.current_char == "/":
+            if self.current_char == "/":
                 self.advance()
-                return Token(TokenType.DIVISION, "/")
+                return Token(TokenType.DIV, "/")
 
-             if self.current_char == "(":
+            if self.current_char == "(":
                 self.advance()
                 return Token(TokenType.LPAREN, "(")
 
-              if self.current_char == ")":
+            if self.current_char == ")":
                 self.advance()
                 return Token(TokenType.RPAREN, ")")
 
